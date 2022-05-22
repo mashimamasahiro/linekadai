@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatアプリ</title>
+    <link rel="stylesheet" href="css/linekadai.css">
+</head>
+<body>
+
+<!-- コンテンツ表示画面 -->
+    <h1>  さあchatしよう！ </h1>
+    <div class="scroll">
+        <span>
+        <div id="output"></div>
+        </span>
+    </div>
+    <ul>
+        <p ><input type="text" id="uname" placeholder="なまえ"></p>
+        <p class="inputbox"><textarea name="" id="text" cols="40" rows="3" placeholder="メッセージを書こう"></textarea> </p>  
+        <p class="inputbox" id="send"><img src="imgs/SendBtn.png" width="50"></p>
+        <p id="delete"><img src="imgs/DeleteallBtn.png" width="80"></p>
+    </ul>
+
+<!--/ コンテンツ表示画面 -->
+
+<!-- JQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<!-- JQuery -->
+
+
+<!--** 以下Firebase **-->
+<!-- scriptベースの内容をコピペする -->
+
+<script type="module">
+    // Import the functions you need from the SDKs you need
+    //fireベースを使うための便利ツールをまず読み込んでいる⇓。
+    //firebaseappのコードから以下の一分機能のみ取り出している。
+    
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.1/firebase-app.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+    
+    //データベースで使うため便利ツールをまず読み込んでいる⇓。
+    //以下の一分機能のみ取り出している。
+    //注意！！firebaseの後がバージョン情報（ここでは9.8.1）が一致してないとバグになる！
+    import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved }
+        from "https://cdnjs.cloudflare.com/ajax/libs/firebase/9.8.1/firebase-database.min.js";
+   
+        // Your web app's Firebase configuration
+        //アクセスに関する情報をここに記載。APIキーは各自異なる
+        //注意！！APIキーが外に流出しないように注意　Githubでは空白""にしておく
+        //個々人が立てたfirebaseにアクセスできるようになる設定（configration）
+    const firebaseConfig = {
+      apiKey: "AIzaSyCM5Lb08ScHvJjwNoBIGCjSL_2ilIncZWE",
+      authDomain: "fir-demo-50ef2.firebaseapp.com",
+      projectId: "fir-demo-50ef2",
+      storageBucket: "fir-demo-50ef2.appspot.com",
+      messagingSenderId: "6718081519",
+      appId: "1:6718081519:web:0db09558c089cc2ed68e1a"
+    };
+  
+    // Initialize Firebase＝初期化
+    //一番始めた便利機能に対し、設定を機能させる指示。
+    //この一行はWebアプリを使うと宣言したのみ。
+    const app = initializeApp(firebaseConfig);
+
+    //以下２つがReal databaseの初期設定。実際に使えるようになるオブジェクトを格納。
+    //refがDBのチャットを参照してくれ、という指示。
+    const db = getDatabase(app);
+
+    //DBの’Chat’という箱のなかに参照してくれ、という指示。ここの名前で格納場所を変えられる。
+    //’名前’を変えることによるデータの参照先を切り分けることができる。
+    const dbRef = ref(db, 'chat');
+    
+    $('#send').on('click', function(){
+    // mgsというオブジェクトを指定して、unameとtextを取り出す定義
+        const msg = {
+            uname: $('#uname').val(),
+            text: $('#text').val()
+        } 
+        // msgを取得して
+        const newPostRef = push(dbRef);
+        // 送る
+        set(newPostRef, msg);        
+    });
+
+    // 送信処理1
+    //chatの中身が新しく増えたときに実行してくれ、という指示。
+    //onchild＝子要素＝dbrefの中身＝Chat。
+    //初回読み込み時にはこれまでのすべてのものも取得してくれる。
+    onChildAdded(dbRef, function(data){
+        const msg = data.val();
+        const key = data.key;
+        // 送信後、名前とテキスト内容をクリアする
+        $("#uname").val("");
+        $("#text").val("");
+
+        //以下でHTM要素を作る
+        let str = '';
+        str += '<dl>';
+        str += '<dt>'+msg.uname+'</dt>';
+        str += '<dd>'+msg.text+'</dd>';
+        str += '</dl>';
+
+        //outputのIDタグに上記Html要素を追加する。
+        $('#output').append(str);
+    });
+
+
+
+    //送信処理２　(e)はイベントの略。
+    $('#text').on('keydown',function(e){
+        //console.log(e.keyCode)←これでキーコード確認
+        //EnterKeyのキーコードは１３番なので
+        //もし１３番だったら、送信する、というif文
+        if(e.keyCode == 13) {
+         const msg = {
+            uname: $('#uname').val(),
+            text: $('#text').val()
+        } 
+        const newPostRef = push(dbRef);
+        set(newPostRef, msg);        
+        }
+    });
+
+    //削除指示1
+    $('#delete').on('click', function(){
+        remove(dbRef);
+    });
+    $('#delete').on('click', function(){
+        confirm("本当に削除しますか？");
+    });
+    
+    // 削除指示２
+    //chatの中身が削除されたときに実行指示。
+    onChildRemoved(dbRef, function(data){
+    //outputを空にする。
+        $('#output').empty();
+    });
+  </script>
+
+
+
+</body>
+</html>
+
